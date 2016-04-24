@@ -1,0 +1,49 @@
+<!doctype html>
+<html ng-app="whiteboardApp" style="height:100%;">
+    
+    <head>
+        
+        <meta charset="utf-8">
+        <title>Preppo - Current Affairs App for SBI PO, SBI Clerk, IBPS PO, IBPS Clerk, SSC & UPSC</title>
+        <meta name="viewport" content="width=device-width">
+        
+        <meta name="description" content="Prepare for IBPS PO, IBPS Clerk, SBI PO, SBI Clerk, SSC CGL, SSC CHSL & UPSC exams on the move by keeping yourself updated with GK & daily Current Affairs. Study in both English and Hindi, take daily updated quizzes specially designed for each exam and test your preparation"/>
+        <meta name="keywords" content="SBI PO, SBI Po Exam, SBI Recruitment, SBI PO Recruitment, sbi bank po, sbi po online, sbi jobs, sbi careers, SBI Clerk, SBI Associate Clerk, SBI Exams, Banking Exams, GK, current affairs, current affairs 2016, banking current affairs, upsc current affairs, IBPS PO, IBPS Clerk, SSC, SSC CGL, SSC CHSL, Railways, LIC AAO, Banking jobs"/>
+        
+        <link rel="icon" href="./resources/favicon.png" />
+        <link rel="alternate" href="android-app://preppo.current_affairs/preppo/current-affairs" />
+        
+        <link rel="stylesheet" type='text/css' href="./bower_components/bootstrap/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" type='text/css' href="./style.css">
+        
+        <script src="https://cdn.firebase.com/js/client/2.2.1/firebase.js"></script>
+        <script src="./bower_components/jquery/dist/jquery.min.js"></script>
+        <script src="./bower_components/angular/angular.min.js"></script>
+        <script src="./script.js?user=teacher"></script>
+        
+    </head>
+        
+    
+    <body style="height: 100%; position: relative; background-color: #d5d5d5; margin: 0px; padding: 0px;" ng-controller="MainController">
+        
+        <div style="height: 50px;"></div>
+        
+        <div id="widths">
+            <span>Thickness : </span>
+            <div ng-repeat="width in whiteboardService.availableOptions.width" ng-class="{ 'active': (width == whiteboardService.userPreference.width) }" ng-click="widthClicked($index)">{{width}}</div>
+        </div>
+        <div id="colors">
+            <span>Colors : </span>
+            <div ng-repeat="color in whiteboardService.availableOptions.color" ng-class="{ 'active': (color == whiteboardService.userPreference.color) }" ng-click="colorClicked($index)" ng-style="{ 'background-color': color }"></div>
+        </div>
+        
+        <div id="tabs">
+            <span>Tabs : </span>
+            <div ng-repeat="tab in whiteboardService.getArray(whiteboardService.userPreference.tabs)" ng-class="{ 'active': (tab == whiteboardService.userPreference.selectedTab ) }" ng-click="tabClicked(tab)">{{tab+1}}</div>
+            <div ng-click="newTabClicked()">+</div>
+        </div>
+        
+        <canvas id="cnvs" ng-mousedown="whiteboardService.startStroke($event)" ng-mousemove="whiteboardService.drawStroke($event)" ng-mouseleave="whiteboardService.stopStroke()" ng-mouseup="whiteboardService.stopStroke()"></canvas>
+        
+    </body>
+</html>

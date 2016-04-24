@@ -1,0 +1,49 @@
+input[type="radio"] {
+    margin-left: 12px;
+    cursor: pointer;
+}
+
+#colors, #widths, #tabs {
+    display: flex;
+    height: 50px;
+    padding-left: 50px;
+}
+
+#colors div, #widths div, #tabs div {
+    height: 24px;
+    width: 24px;
+    border: 2px solid #d5d5d5;
+    align-self: center;
+    float: left;
+    margin: 0px 12px;
+    cursor: pointer;
+}
+
+#widths div, #tabs div {
+    background-color: white;
+    text-align: center;
+}
+
+#widths div {
+    width: 80px;
+}
+
+#colors span, #widths span, #tabs span {
+    align-self: center;
+}
+
+#colors div:hover, #widths div:hover, #tabs div:hover {
+    border: 2px solid orange;
+}
+
+#colors div.active, #widths div.active, #tabs div.active {
+    border: 2px solid orange;
+}
+
+#cnvs {
+    height: 400px;
+    width: 600px;
+    background-color: white;
+    border: solid 1px black;
+    margin-left: 50px;
+}
