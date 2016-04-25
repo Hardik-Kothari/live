@@ -49,7 +49,7 @@ app.factory('eventSenderService', [function() {
     var events = [];
      
     function addEvent(n, v) {
-        var event = v?{ n: n, v: v }:{ n: n};
+        var event = (v === undefined)?{ n: n}:{ n: n, v: v };
         events.push(event);
     }
     
