@@ -33,7 +33,9 @@
             <div ng-repeat="tab in whiteboardService.getArray(whiteboardService.userPreference.tabs)" ng-class="{ 'active': (tab == whiteboardService.userPreference.selectedTab ) }">{{tab+1}}</div>
         </div>
         
-        <canvas id="cnvs"></canvas>
+        <div id="cnvsContainer">
+            <canvas id="cnvs"></canvas>
+        </div>
         
     </body>
 </html>

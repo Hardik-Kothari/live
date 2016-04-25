@@ -49,10 +49,7 @@ app.factory('eventSenderService', [function() {
     var events = [];
      
     function addEvent(n, v) {
-        var event = {
-            n: n,
-            v: v
-        };
+        var event = v?{ n: n, v: v }:{ n: n};
         events.push(event);
     }
     
@@ -73,8 +70,8 @@ app.factory('eventSenderService', [function() {
 
 app.factory('firebaseService', ['helperService', function(helperService) {
     
-    //var url = "https://sizzling-inferno-5923.firebaseio.com/test/";
-    var url="https://dev-preppo.firebaseio.com/teaching/21/whiteboard/";
+    var url = "https://sizzling-inferno-5923.firebaseio.com/test/";
+    //var url="https://dev-preppo.firebaseio.com/teaching/21/whiteboard/";
     var senderUrl = url + helperService.user;
     
     function opposite(user) {
@@ -110,11 +107,13 @@ app.factory('firebaseSenderService', ['firebaseService', function(firebaseServic
 app.factory('whiteboardService', ['eventSenderService', 'helperService', function(eventSenderService, helperService) {
     var availableOptions = {
         width: ['thin', 'medium', 'thick'],
-        color: ['#000000', '#00ff00', '#0000ff', '#ff0000']
+        color: ['#000000', '#0000ff', '#ff0000']
     };
     var userPreference = {
-        color: availableOptions.color[0],
-        width: availableOptions.width[1],
+        penColor: availableOptions.color[0],
+        penWidth: availableOptions.width[1],
+        eraserColor: 'white',
+        eraserWidth: 'defaultEraser',
         tabs: 1,
         selectedTab: 0,
         isEraserSelected: false
@@ -125,7 +124,7 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
     
     var geoData = {
         x: position.left,
-        y: position.top,
+        y: position.top-80,
         height: 400,
         width: 600
     };
@@ -139,9 +138,10 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
     canvas.width = 600;
     canvas.height = 400;
     context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
-    context.strokeStyle = userPreference.color;
+    context.strokeStyle = userPreference.penColor;
+    context.lineWidth = denormalize(getPenWidth(userPreference.penWidth));
     context.lineJoin = "round";
-    context.lineWidth = denormalize(getPenWidth(userPreference.width));
+    context.globalCompositeOperation="source-over";
     
     function normalize(point) {
         if(typeof(point) == 'object') {
@@ -177,6 +177,9 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
             else if(str === "thick") {
                 return 60;
             }
+            else if(str === "defaultEraser") {
+                return 200;
+            }
         }
         else if(typeof(input) == 'number') {
             var num = input;
@@ -188,6 +191,9 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
             }
             else if(num === 60) {
                 return 'thick';
+            }
+            else if(num === 200) {
+                return 'defaultEraser';
             }
         }
     }
@@ -212,7 +218,7 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
         drawing = true;
         var x = e.pageX-geoData.x;
         var y = e.pageY-geoData.y;
-        strokes[userPreference.selectedTab].push([userPreference.color, userPreference.width, [normalize([x, y])]]);
+        strokes[userPreference.selectedTab].push([userPreference.isEraserSelected?userPreference.eraserColor:userPreference.penColor, userPreference.isEraserSelected?userPreference.eraserWidth:userPreference.penWidth, [normalize([x, y])]]);
         currentStroke = [normalize([x, y])];
         context.beginPath();
         context.moveTo(x, y);
@@ -222,6 +228,8 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
         if(drawing) {
             var x = e.pageX-geoData.x;
             var y = e.pageY-geoData.y;
+            console.log("x, y : " + e.pageX + " , " + e.pageY);
+            console.log("x, y : " + geoData.x + " , " + geoData.y);
             helperService.lastOf(helperService.lastOf(strokes[userPreference.selectedTab])).push(normalize([x, y]));
             currentStroke.push(normalize([x, y]));
             context.lineTo(x, y);
@@ -241,6 +249,7 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
             var strokeInfo = strokesForThisTab[i];
             context.strokeStyle = strokeInfo[0];
             context.lineWidth = denormalize(getPenWidth(strokeInfo[1]));
+            context.globalCompositeOperation = (strokeInfo[0] == 'white')?"destination-out":"source-over";
             var stroke = strokeInfo[2];
             context.beginPath();
             var a = denormalize(stroke[0]);
@@ -252,8 +261,8 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
             context.stroke();
             context.closePath();
         }
-        context.strokeStyle = userPreference.color;
-        context.lineWidth = userPreference.width;
+        context.strokeStyle = userPreference.isEraserSelected?userPreference.eraserColor:userPreference.penColor;
+        context.lineWidth = userPreference.isEraserSelected?userPreference.eraserWidth:userPreference.penWidth;
     };
     
     var showStroke = function(arr) {
@@ -261,11 +270,12 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
         var x = a[0], y = a[1];
         context.beginPath();
         context.moveTo(x, y);
-        strokes[userPreference.selectedTab].push([userPreference.color, userPreference.width, [arr[0]]]);
+        strokes[userPreference.selectedTab].push([userPreference.isEraserSelected?userPreference.eraserColor:userPreference.penColor, userPreference.isEraserSelected?userPreference.eraserWidth:userPreference.penWidth, [arr[0]]]);
         for(var i=1; i<arr.length; i++) {
             a = denormalize(arr[i]);
             x = a[0];
             y = a[1];
+            context.globalCompositeOperation = userPreference.isEraserSelected?"destination-out":"source-over";    
             context.lineTo(x, y);
             helperService.lastOf(helperService.lastOf(strokes[userPreference.selectedTab])).push(arr[i]);
         }
@@ -286,14 +296,31 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
         redraw();
     }; 
     
-    var changeColor = function(index) {
-        userPreference.color = availableOptions.color[index];
-        context.strokeStyle = userPreference.color;
+    var changeColor = function(color) {
+        userPreference.penColor = color;
+        context.strokeStyle = userPreference.penColor;
     };
     
     var changeWidth = function(index) {
-        userPreference.width = availableOptions.width[index];
-        context.lineWidth = denormalize(getPenWidth(userPreference.width));
+        userPreference.penWidth = availableOptions.width[index];
+        context.lineWidth = denormalize(getPenWidth(userPreference.penWidth));
+    };
+    
+    var eraserOn = function(width) {
+        if(width) {
+            userPreference.eraserWidth = width; 
+        }
+        context.strokeStyle = userPreference.eraserColor;
+        context.lineWidth = denormalize(getPenWidth(userPreference.eraserWidth));
+        context.globalCompositeOperation="destination-out";
+        userPreference.isEraserSelected = true;
+    };
+    
+    var eraserOff = function() {
+        context.strokeStyle = userPreference.penColor;
+        context.lineWidth = denormalize(getPenWidth(userPreference.penWidth));
+        context.globalCompositeOperation="source-over";
+        userPreference.isEraserSelected = false;
     };
     
     return {
@@ -310,7 +337,9 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
         changeColor: changeColor,
         changeWidth: changeWidth,
         getArray: helperService.getArray,
-        getPenWidth: getPenWidth
+        getPenWidth: getPenWidth,
+        eraserOn: eraserOn,
+        eraserOff: eraserOff
     };
     
 }]);
@@ -335,10 +364,7 @@ app.factory('firebaseReceiverService', ['firebaseService', 'whiteboardService', 
             }
         }
         else if(name === 'color-change') {
-            var index = whiteboardService.availableOptions.color.indexOf(value);
-            if(index >= 0) {
-                whiteboardService.changeColor(index);
-            }
+            whiteboardService.changeColor(value);
         }
         else if(name === 'width-change') {
             var thickness = whiteboardService.getPenWidth(parseInt(value));
@@ -346,6 +372,13 @@ app.factory('firebaseReceiverService', ['firebaseService', 'whiteboardService', 
             if(index >= 0) {
                 whiteboardService.changeWidth(index);
             }
+        }
+        else if(name === 'eraser-on') {
+            var thickness = whiteboardService.getPenWidth(parseInt(value));
+            whiteboardService.eraserOn(thickness);
+        }
+        else if(name === 'eraser-off') {
+            whiteboardService.eraserOff();
         }
         else if(name === 'aspect-ratio') {
             
@@ -387,19 +420,46 @@ app.controller('MainController', ['$scope', '$http', 'whiteboardService', 'fireb
     }; 
     
     $scope.colorClicked = function(index) {
-        if(whiteboardService.availableOptions.color[index] === whiteboardService.userPreference.color) {
+        if(whiteboardService.availableOptions.color[index] === whiteboardService.userPreference.penColor) {
             return;
         }
-        whiteboardService.changeColor(index);
-        eventSenderService.addEvent('color-change', whiteboardService.userPreference.color);
+        whiteboardService.changeColor(whiteboardService.availableOptions.color[index]);
+        eventSenderService.addEvent('color-change', whiteboardService.userPreference.penColor);
     };
     
+    $scope.eraserSelected = function(isEraserSelected) {
+        if(whiteboardService.userPreference.isEraserSelected !== isEraserSelected) {
+            if(isEraserSelected) {
+                whiteboardService.eraserOn();
+                eventSenderService.addEvent('eraser-on', 200);
+            }
+            else {
+                whiteboardService.eraserOff();
+                eventSenderService.addEvent('eraser-off');
+            }
+        }
+    };
+    
+    $scope.penChanged = function(type) {
+        if(type === 'pen') {
+            if(whiteboardService.userPreference.isEraserSelected) {
+                whiteboardService.userPreference.isEraserSelected = false;
+                
+            }
+        }
+        else if(type === 'eraser') {
+            if(!whiteboardService.userPreference.isEraserSelected) {
+                whiteboardService.userPreference.isEraserSelected = true;
+            }
+        } 
+    }
+    
     $scope.widthClicked = function(index) {
-        if(whiteboardService.availableOptions.width[index] === whiteboardService.userPreference.width) {
+        if(whiteboardService.availableOptions.width[index] === whiteboardService.userPreference.penWidth) {
             return;
         }
         whiteboardService.changeWidth(index);
-        eventSenderService.addEvent('width-change', whiteboardService.getPenWidth(whiteboardService.userPreference.width));
+        eventSenderService.addEvent('width-change', whiteboardService.getPenWidth(whiteboardService.userPreference.penWidth));
     };
     
     if(helperService.user === 'teacher') {

@@ -3,13 +3,16 @@ input[type="radio"] {
     cursor: pointer;
 }
 
-#colors, #widths, #tabs {
-    display: flex;
-    height: 50px;
+.empty, #colors, #widths, #tabs, #options {
+    height: 40px;
     padding-left: 50px;
 }
 
-#colors div, #widths div, #tabs div {
+#colors, #widths, #tabs, #options {
+    display: flex;
+}
+
+#colors div, #widths div, #tabs div, #options div {
     height: 24px;
     width: 24px;
     border: 2px solid #d5d5d5;
@@ -28,22 +31,40 @@ input[type="radio"] {
     width: 80px;
 }
 
-#colors span, #widths span, #tabs span {
+#options div {
+    height: 30px;
+    width: 40px;
+    text-align: center;
+    line-height: 30px;
+}
+
+#colors span, #widths span, #tabs span, #options span {
     align-self: center;
 }
 
-#colors div:hover, #widths div:hover, #tabs div:hover {
+#colors div:hover, #widths div:hover, #tabs div:hover, #options div:hover {
     border: 2px solid orange;
 }
 
-#colors div.active, #widths div.active, #tabs div.active {
+#colors div.active, #widths div.active, #tabs div.active, #options div.active {
     border: 2px solid orange;
 }
 
 #cnvs {
     height: 400px;
     width: 600px;
-    background-color: white;
-    border: solid 1px black;
+    background-color: rgba(0, 0, 0, 0);
+    margin: 0px;
+    padding: 0px;
+    cursor: crosshair;
+}
+
+#cnvsContainer {
+    background-color: darkseagreen;
+    padding: 0px;
     margin-left: 50px;
+    width: 600px;
+    height: 400px;
+    border: solid 1px black;
+    box-sizing: content-box;
 }
