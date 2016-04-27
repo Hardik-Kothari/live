@@ -30,31 +30,32 @@
         
         <div id="options">
             <span>Pen type : </span>
-            <div ng-class="{ 'active': !whiteboardService.userPreference.isEraserSelected }" ng-click="eraserSelected(false)"><span class="glyphicon glyphicon-pencil"></span></div>
-            <div ng-class="{ 'active': whiteboardService.userPreference.isEraserSelected }" ng-click="eraserSelected(true)"><span class="glyphicon glyphicon-erase"></span></div>
+            <div ng-class="{ 'active': !whiteboardTeacherService.userPreference.isEraserSelected }" ng-click="eraserSelected(false)"><span class="glyphicon glyphicon-pencil"></span></div>
+            <div ng-class="{ 'active': whiteboardTeacherService.userPreference.isEraserSelected }" ng-click="eraserSelected(true)"><span class="glyphicon glyphicon-erase"></span></div>
         </div>
         
-        <div id="widths" ng-show="!whiteboardService.userPreference.isEraserSelected">
+        <div id="widths" ng-show="!whiteboardTeacherService.userPreference.isEraserSelected">
             <span>Thickness : </span>
-            <div ng-repeat="width in whiteboardService.availableOptions.width" ng-class="{ 'active': (width == whiteboardService.userPreference.penWidth) }" ng-click="widthClicked($index)">{{width}}</div>
+            <div ng-repeat="width in whiteboardTeacherService.availableOptions.width" ng-class="{ 'active': (width == whiteboardTeacherService.userPreference.penWidth) }" ng-click="widthClicked($index)">{{width}}</div>
         </div>
         
-        <div id="colors" ng-show="!whiteboardService.userPreference.isEraserSelected">
+        <div id="colors" ng-show="!whiteboardTeacherService.userPreference.isEraserSelected">
             <span>Colors : </span>
-            <div ng-repeat="color in whiteboardService.availableOptions.color" ng-class="{ 'active': (color == whiteboardService.userPreference.penColor) }" ng-click="colorClicked($index)" ng-style="{ 'background-color': color }"></div>
+            <div ng-repeat="color in whiteboardTeacherService.availableOptions.color" ng-class="{ 'active': (color == whiteboardTeacherService.userPreference.penColor) }" ng-click="colorClicked($index)" ng-style="{ 'background-color': color }"></div>
         </div>
         
-        <div class="empty" ng-show="whiteboardService.userPreference.isEraserSelected"></div>
-        <div class="empty" ng-show="whiteboardService.userPreference.isEraserSelected"></div>
+        <div class="empty" ng-show="whiteboardTeacherService.userPreference.isEraserSelected"></div>
+        <div class="empty" ng-show="whiteboardTeacherService.userPreference.isEraserSelected"></div>
         
         <div id="tabs">
             <span>Tabs : </span>
-            <div ng-repeat="tab in whiteboardService.getArray(whiteboardService.userPreference.tabs)" ng-class="{ 'active': (tab == whiteboardService.userPreference.selectedTab ) }" ng-click="tabClicked(tab)">{{tab+1}}</div>
+            <div ng-repeat="tab in whiteboardTeacherService.getArray(whiteboardTeacherService.userPreference.tabs)" ng-class="{ 'active': (tab == whiteboardTeacherService.userPreference.selectedTab ) }" ng-click="tabClicked(tab)">{{tab+1}}</div>
             <div ng-click="newTabClicked()">+</div>
         </div>
         
         <div id="cnvsContainer">
-            <canvas id="cnvs" ng-mousedown="whiteboardService.startStroke($event)" ng-mousemove="whiteboardService.drawStroke($event)" ng-mouseleave="whiteboardService.stopStroke()" ng-mouseup="whiteboardService.stopStroke()"></canvas>
+            <canvas id="cnvs2" class="cnvs"></canvas>
+            <canvas id="cnvs1" class="cnvs" ng-mousedown="whiteboardTeacherService.startStroke($event)" ng-mousemove="whiteboardTeacherService.drawStroke($event)" ng-mouseleave="whiteboardTeacherService.stopStroke()" ng-mouseup="whiteboardTeacherService.stopStroke()"></canvas>
         </div>
         
     </body>

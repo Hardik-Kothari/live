@@ -70,8 +70,9 @@ app.factory('eventSenderService', [function() {
 
 app.factory('firebaseService', ['helperService', function(helperService) {
     
-    var url = "https://sizzling-inferno-5923.firebaseio.com/test/";
+    var url = "https://sizzling-inferno-5923.firebaseio.com";
     //var url="https://dev-preppo.firebaseio.com/teaching/21/whiteboard/";
+    url = url + '/whiteboard/';
     var senderUrl = url + helperService.user;
     
     function opposite(user) {
@@ -104,7 +105,7 @@ app.factory('firebaseSenderService', ['firebaseService', function(firebaseServic
 }]);
 
 
-app.factory('whiteboardService', ['eventSenderService', 'helperService', function(eventSenderService, helperService) {
+app.factory('whiteboardTeacherService', ['eventSenderService', 'helperService', function(eventSenderService, helperService) {
     var availableOptions = {
         width: ['thin', 'medium', 'thick'],
         color: ['#000000', '#0000ff', '#ff0000']
@@ -119,7 +120,7 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
         isEraserSelected: false
     };
     
-    var element = document.getElementById('cnvs');
+    var element = document.getElementById('cnvs1');
     var position = element.getBoundingClientRect();
     
     var geoData = {
@@ -133,7 +134,7 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
     var currentStroke = [];
     var last = undefined;
     var drawing = false;
-    var canvas = document.getElementById('cnvs');
+    var canvas = document.getElementById('cnvs1');
     var context = canvas.getContext('2d');
     canvas.width = 600;
     canvas.height = 400;
@@ -228,8 +229,6 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
         if(drawing) {
             var x = e.pageX-geoData.x;
             var y = e.pageY-geoData.y;
-            console.log("x, y : " + e.pageX + " , " + e.pageY);
-            console.log("x, y : " + geoData.x + " , " + geoData.y);
             helperService.lastOf(helperService.lastOf(strokes[userPreference.selectedTab])).push(normalize([x, y]));
             currentStroke.push(normalize([x, y]));
             context.lineTo(x, y);
@@ -345,43 +344,153 @@ app.factory('whiteboardService', ['eventSenderService', 'helperService', functio
 }]);
 
 
-app.factory('firebaseReceiverService', ['firebaseService', 'whiteboardService', '$rootScope', function(firebaseService, whiteboardService, $rootScope) {
+app.factory('whiteboardStudentService', ['firebaseSenderService', function(firebaseSenderService) {
+    var canvas = document.getElementById('cnvs2');
+    var context = canvas.getContext('2d');
+    canvas.width = 600;
+    canvas.height = 400;
+    context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
+    context.strokeStyle = '#00ff00';
+    
+    var element = document.getElementById('cnvs2');
+    var position = element.getBoundingClientRect();
+    
+    var geoData = {
+        x: position.left,
+        y: position.top,
+        height: 400,
+        width: 600
+    };
+    
+    var drawing = false;
+    
+    function normalize(point) {
+        if(typeof(point) == 'object') {
+            var x = Math.round(point[0]*10000/geoData.width);
+            var y = Math.round(point[1]*10000/geoData.height);
+            return [x, y];    
+        }
+        else {
+            return Math.ceil(point*10000/geoData.width);   
+        }
+    }
+    
+    function denormalize(point) {
+        if(typeof(point) == 'object') {
+            var x = Math.round(point[0]*geoData.width/10000);
+            var y = Math.round(point[1]*geoData.height/10000);
+            return [x, y];    
+        }
+        else {
+            return Math.ceil(point*geoData.width/10000);
+        }
+    }
+    
+    function clear() {
+        context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+    }
+    
+    var latestPoint = undefined;
+    var wasLatestEventUndefined = false;
+    
+    var startHighlighting = function(e) {
+        var x = e.pageX-geoData.x;
+        var y = e.pageY-geoData.y;
+        latestPoint = normalize([x, y]);
+        drawing = true;
+    }
+    
+    var continueHighlighting = function(e) {
+        if(drawing) {
+            var x = e.pageX-geoData.x;
+            var y = e.pageY-geoData.y;
+            latestPoint = normalize([x, y]);   
+        }
+    }
+    
+    var stopHighlighting = function(e) {
+        drawing = false;
+    }
+    
+    var drawPoint = function(point) {
+        clear();
+        point = denormalize(point);
+        context.fillRect(point[0], point[1], 5, 5);
+    }
+    
+    var sendData = function() {
+        console.log('latestPoint : ' + latestPoint);
+        if(latestPoint) {
+            console.log('inside latestPoint : ' + latestPoint);
+            firebaseSenderService.pushEvent({n: 'pointer', v: latestPoint});
+            latestPoint = undefined;
+            wasLatestEventUndefined = true;
+        }
+        else {
+            if(wasLatestEventUndefined) {
+                firebaseSenderService.pushEvent({n: 'pointer', v: 'clear'});
+                wasLatestEventUndefined = false;
+            }
+        }
+    };
+    
+    return {
+        clear: clear,
+        drawPoint: drawPoint,
+        sendData: sendData,
+        startHighlighting: startHighlighting,
+        continueHighlighting: continueHighlighting,
+        stopHighlighting: stopHighlighting
+    };
+    
+}])
+
+
+app.factory('firebaseReceiverService', ['firebaseService', 'whiteboardTeacherService', 'whiteboardStudentService', '$rootScope', function(firebaseService, whiteboardTeacherService, whiteboardStudentService, $rootScope) {
     firebaseService['receiver'].on('child_added', function(snapshot) {
         var message = snapshot.val();
         var name = message.n;
         var value = message.v;
         
         if(name === 'stroke') {
-            whiteboardService.showStroke(value); 
+            whiteboardTeacherService.showStroke(value); 
         }
         else if(name === 'tab-change') {
             value = parseInt(value);
-            if(value == whiteboardService.userPreference.tabs) {
-                whiteboardService.addTab();
+            if(value == whiteboardTeacherService.userPreference.tabs) {
+                whiteboardTeacherService.addTab();
             }
-            else if(value < whiteboardService.userPreference.tabs) {
-                whiteboardService.changeTab(value);
+            else if(value < whiteboardTeacherService.userPreference.tabs) {
+                whiteboardTeacherService.changeTab(value);
             }
         }
         else if(name === 'color-change') {
-            whiteboardService.changeColor(value);
+            whiteboardTeacherService.changeColor(value);
         }
         else if(name === 'width-change') {
-            var thickness = whiteboardService.getPenWidth(parseInt(value));
-            var index = whiteboardService.availableOptions.width.indexOf(thickness);
+            var thickness = whiteboardTeacherService.getPenWidth(parseInt(value));
+            var index = whiteboardTeacherService.availableOptions.width.indexOf(thickness);
             if(index >= 0) {
-                whiteboardService.changeWidth(index);
+                whiteboardTeacherService.changeWidth(index);
             }
         }
         else if(name === 'eraser-on') {
-            var thickness = whiteboardService.getPenWidth(parseInt(value));
-            whiteboardService.eraserOn(thickness);
+            var thickness = whiteboardTeacherService.getPenWidth(parseInt(value));
+            whiteboardTeacherService.eraserOn(thickness);
         }
         else if(name === 'eraser-off') {
-            whiteboardService.eraserOff();
+            whiteboardTeacherService.eraserOff();
         }
         else if(name === 'aspect-ratio') {
             
+        }
+        else if(name === 'pointer') {
+            if(typeof(value) === 'object') {
+                whiteboardStudentService.drawPoint(value);   
+            }
+            else {
+                whiteboardStudentService.clear();
+            }
         }
         $rootScope.$apply();
     });
@@ -390,9 +499,10 @@ app.factory('firebaseReceiverService', ['firebaseService', 'whiteboardService', 
 }]);
 
 
-app.controller('MainController', ['$scope', '$http', 'whiteboardService', 'firebaseSenderService', 'firebaseReceiverService', 'eventSenderService', 'helperService', function($scope, $http, whiteboardService, firebaseSenderService, firebaseReceiverService, eventSenderService, helperService) {
-    $scope.whiteboardService = whiteboardService;
+app.controller('MainController', ['$scope', '$http', 'whiteboardTeacherService', 'whiteboardStudentService', 'firebaseSenderService', 'firebaseReceiverService', 'eventSenderService', 'helperService', function($scope, $http, whiteboardTeacherService, whiteboardStudentService, firebaseSenderService, firebaseReceiverService, eventSenderService, helperService) {
     
+    //teacher
+    $scope.whiteboardTeacherService = whiteboardTeacherService;
     function sendData() {
         var arr = eventSenderService.getEvents();
         eventSenderService.clearEvents();
@@ -401,40 +511,40 @@ app.controller('MainController', ['$scope', '$http', 'whiteboardService', 'fireb
         }
     }
     
-    function timerCalling() {
-        whiteboardService.completeStroke(true);
+    function teacherTimerCalling() {
+        whiteboardTeacherService.completeStroke(true);
         sendData();
     };
     
     $scope.newTabClicked = function() {
-        whiteboardService.addTab();
-        eventSenderService.addEvent('tab-change', whiteboardService.userPreference.selectedTab);
+        whiteboardTeacherService.addTab();
+        eventSenderService.addEvent('tab-change', whiteboardTeacherService.userPreference.selectedTab);
     };
     
     $scope.tabClicked = function(index) {
-        if(index === whiteboardService.userPreference.selectedTab) {
+        if(index === whiteboardTeacherService.userPreference.selectedTab) {
             return;
         }
-        whiteboardService.changeTab(index);
-        eventSenderService.addEvent('tab-change', whiteboardService.userPreference.selectedTab);
+        whiteboardTeacherService.changeTab(index);
+        eventSenderService.addEvent('tab-change', whiteboardTeacherService.userPreference.selectedTab);
     }; 
     
     $scope.colorClicked = function(index) {
-        if(whiteboardService.availableOptions.color[index] === whiteboardService.userPreference.penColor) {
+        if(whiteboardTeacherService.availableOptions.color[index] === whiteboardTeacherService.userPreference.penColor) {
             return;
         }
-        whiteboardService.changeColor(whiteboardService.availableOptions.color[index]);
-        eventSenderService.addEvent('color-change', whiteboardService.userPreference.penColor);
+        whiteboardTeacherService.changeColor(whiteboardTeacherService.availableOptions.color[index]);
+        eventSenderService.addEvent('color-change', whiteboardTeacherService.userPreference.penColor);
     };
     
     $scope.eraserSelected = function(isEraserSelected) {
-        if(whiteboardService.userPreference.isEraserSelected !== isEraserSelected) {
+        if(whiteboardTeacherService.userPreference.isEraserSelected !== isEraserSelected) {
             if(isEraserSelected) {
-                whiteboardService.eraserOn();
+                whiteboardTeacherService.eraserOn();
                 eventSenderService.addEvent('eraser-on', 200);
             }
             else {
-                whiteboardService.eraserOff();
+                whiteboardTeacherService.eraserOff();
                 eventSenderService.addEvent('eraser-off');
             }
         }
@@ -442,28 +552,39 @@ app.controller('MainController', ['$scope', '$http', 'whiteboardService', 'fireb
     
     $scope.penChanged = function(type) {
         if(type === 'pen') {
-            if(whiteboardService.userPreference.isEraserSelected) {
-                whiteboardService.userPreference.isEraserSelected = false;
+            if(whiteboardTeacherService.userPreference.isEraserSelected) {
+                whiteboardTeacherService.userPreference.isEraserSelected = false;
                 
             }
         }
         else if(type === 'eraser') {
-            if(!whiteboardService.userPreference.isEraserSelected) {
-                whiteboardService.userPreference.isEraserSelected = true;
+            if(!whiteboardTeacherService.userPreference.isEraserSelected) {
+                whiteboardTeacherService.userPreference.isEraserSelected = true;
             }
         } 
     }
     
     $scope.widthClicked = function(index) {
-        if(whiteboardService.availableOptions.width[index] === whiteboardService.userPreference.penWidth) {
+        if(whiteboardTeacherService.availableOptions.width[index] === whiteboardTeacherService.userPreference.penWidth) {
             return;
         }
-        whiteboardService.changeWidth(index);
-        eventSenderService.addEvent('width-change', whiteboardService.getPenWidth(whiteboardService.userPreference.penWidth));
+        whiteboardTeacherService.changeWidth(index);
+        eventSenderService.addEvent('width-change', whiteboardTeacherService.getPenWidth(whiteboardTeacherService.userPreference.penWidth));
     };
     
+    
+    //student
+    $scope.whiteboardStudentService = whiteboardStudentService;
+    function studentTimerCalling() {
+        whiteboardStudentService.sendData();
+    }
+    
+    //both
     if(helperService.user === 'teacher') {
-        setInterval(function(){ timerCalling() }, 400);   
+        setInterval(function(){ teacherTimerCalling() }, 400);
+    }
+    else {
+        setInterval(function(){ studentTimerCalling() }, 250);
     }
 
 }]);

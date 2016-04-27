@@ -30,11 +30,12 @@
         
         <div id="tabs">
             <span>Tabs : </span>
-            <div ng-repeat="tab in whiteboardService.getArray(whiteboardService.userPreference.tabs)" ng-class="{ 'active': (tab == whiteboardService.userPreference.selectedTab ) }">{{tab+1}}</div>
+            <div ng-repeat="tab in whiteboardTeacherService.getArray(whiteboardTeacherService.userPreference.tabs)" ng-class="{ 'active': (tab == whiteboardTeacherService.userPreference.selectedTab ) }">{{tab+1}}</div>
         </div>
         
         <div id="cnvsContainer">
-            <canvas id="cnvs"></canvas>
+            <canvas id="cnvs1" class="cnvs"></canvas>
+            <canvas id="cnvs2" class="cnvs" ng-mousedown="whiteboardStudentService.startHighlighting($event)" ng-mousemove="whiteboardStudentService.continueHighlighting($event)" ng-mouseleave="whiteboardStudentService.stopHighlighting($event)" ng-mouseup="whiteboardStudentService.stopHighlighting($event)"></canvas>
         </div>
         
     </body>
