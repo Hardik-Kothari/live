@@ -350,7 +350,7 @@ app.factory('whiteboardStudentService', ['firebaseSenderService', function(fireb
     canvas.width = 600;
     canvas.height = 400;
     context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
-    context.strokeStyle = '#00ff00';
+    context.fillStyle = '#00ff00';
     
     var element = document.getElementById('cnvs2');
     var position = element.getBoundingClientRect();
@@ -391,7 +391,7 @@ app.factory('whiteboardStudentService', ['firebaseSenderService', function(fireb
     }
     
     var latestPoint = undefined;
-    var wasLatestEventUndefined = false;
+    var timeoutEvent = undefined;
     
     var startHighlighting = function(e) {
         var x = e.pageX-geoData.x;
@@ -413,9 +413,17 @@ app.factory('whiteboardStudentService', ['firebaseSenderService', function(fireb
     }
     
     var drawPoint = function(point) {
+        if(timeoutEvent) {
+            clearTimeout(timeoutEvent);
+        }
         clear();
         point = denormalize(point);
-        context.fillRect(point[0], point[1], 5, 5);
+        //context.fillRect(point[0], point[1], 5, 5);
+        context.beginPath();
+        context.arc(point[0], point[1], 3, 0, 2 * Math.PI, false);
+        context.fill();
+        context.closePath();
+        timeoutEvent = setTimeout( clear, 2000 );
     }
     
     var sendData = function() {
@@ -424,13 +432,6 @@ app.factory('whiteboardStudentService', ['firebaseSenderService', function(fireb
             console.log('inside latestPoint : ' + latestPoint);
             firebaseSenderService.pushEvent({n: 'pointer', v: latestPoint});
             latestPoint = undefined;
-            wasLatestEventUndefined = true;
-        }
-        else {
-            if(wasLatestEventUndefined) {
-                firebaseSenderService.pushEvent({n: 'pointer', v: 'clear'});
-                wasLatestEventUndefined = false;
-            }
         }
     };
     
@@ -485,12 +486,7 @@ app.factory('firebaseReceiverService', ['firebaseService', 'whiteboardTeacherSer
             
         }
         else if(name === 'pointer') {
-            if(typeof(value) === 'object') {
-                whiteboardStudentService.drawPoint(value);   
-            }
-            else {
-                whiteboardStudentService.clear();
-            }
+            whiteboardStudentService.drawPoint(value);   
         }
         $rootScope.$apply();
     });
@@ -584,7 +580,7 @@ app.controller('MainController', ['$scope', '$http', 'whiteboardTeacherService',
         setInterval(function(){ teacherTimerCalling() }, 400);
     }
     else {
-        setInterval(function(){ studentTimerCalling() }, 250);
+        setInterval(function(){ studentTimerCalling() }, 200);
     }
 
 }]);
